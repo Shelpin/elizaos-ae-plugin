@@ -1,0 +1,44 @@
+{
+  "name": "@elizaos/plugin-aeternity",
+  "version": "0.1.0",
+  "description": "Aeternity blockchain plugin for ElizaOS, enabling private key management and blockchain operations",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "jest",
+    "lint": "eslint src --ext .ts"
+  },
+  "keywords": [
+    "elizaos",
+    "elizaos-plugin",
+    "aeternity",
+    "blockchain",
+    "crypto"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aeternity/aepp-sdk": "13.2.2",
+    "crypto-js": "^4.2.0",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/crypto-js": "^4.2.1",
+    "@types/jest": "^29.5.10",
+    "@types/node": "^20.10.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.2"
+  },
+  "peerDependencies": {
+    "elizaos": ">=0.25.0"
+  }
+}
