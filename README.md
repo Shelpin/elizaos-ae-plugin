@@ -2,6 +2,8 @@
 
 Core Aeternity blockchain plugin for Eliza OS that provides essential services and actions for private key management, token operations, and Telegram tipping.
 
+Development funded by aeternity foundation. 
+
 > **Current Status:** Phase 1 is complete and the plugin is ready for pre-production testing. Core functionality works in a mock environment, with the contribution analyzer, tipping system, and address registration fully functional. See [Pre-Production Environment](#pre-production-environment) section for testing instructions.
 
 ## Project Status: Pre-Production Ready
