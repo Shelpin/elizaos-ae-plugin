@@ -2,8 +2,6 @@
 
 Core Aeternity blockchain plugin for Eliza OS that provides essential services and actions for private key management, token operations, and Telegram tipping.
 
-Development funded by aeternity foundation. 
-
 > **Current Status:** Phase 1 is complete and the plugin is ready for pre-production testing. Core functionality works in a mock environment, with the contribution analyzer, tipping system, and address registration fully functional. See [Pre-Production Environment](#pre-production-environment) section for testing instructions.
 
 ## Project Status: Pre-Production Ready
@@ -329,23 +327,44 @@ When developing the plugin, you may encounter these TypeScript errors:
    
    Error: `Cannot find module 'elizaos' or its corresponding type declarations`
    
-   This error is expected during development as the 'elizaos' module is only available in the ElizaOS runtime environment. We've added mock type declarations in `src/types/elizaos.d.ts` to prevent TypeScript errors during development.
+   This error is expected during development as the 'elizaos' module is only available in the ElizaOS runtime environment. We've added mock type definitions in the `src/types` directory to help with development.
 
-2. **ContributionAnalyzerService Runtime Parameter**
+2. **ContributionAnalyzerService Constructor Parameters**
    
-   Error: `Expected 1-2 arguments, but got 0` or `An argument for 'runtime' was not provided`
+   Error: `Expected 1-2 arguments, but got 0`
    
-   The ContributionAnalyzerService requires the ElizaOS runtime to be passed as a parameter for accessing LLM capabilities. When running in the actual ElizaOS environment, this parameter will be available. The service includes fallback mechanisms for keyword-based analysis when the LLM is not available.
+   The ContributionAnalyzerService requires the ElizaOS runtime to be passed in. During development, this parameter is optional to allow for testing, but in the actual ElizaOS environment, it's required.
 
-### Testing Without ElizaOS
+## Pre-production Testing
 
-For testing without an ElizaOS environment:
+You can test the plugin in a pre-production environment using the provided test scripts:
 
-1. The service will fall back to keyword-based analysis when the LLM is not available
-2. You can create mock implementations of the runtime interfaces for testing
-3. Refer to the `examples` directory for demonstration code
+```bash
+# Install dependencies
+pnpm install
 
-See the [examples README](./examples/README.md) for more details on running the examples.
+# Run the Telegram tipping test script
+pnpm tsx test-telegram-tip.ts
+```
+
+The test script simulates:
+- Address registration for Telegram users
+- Sending tips to registered users
+- Handling unregistered users
+- Using contribution-based tip amounts
+
+Note: The test runs in mock mode, simulating blockchain transactions without requiring a real blockchain connection.
+
+## Production Deployment
+
+For deploying to a production environment, please refer to the [Production Guide](./PRODUCTION_GUIDE.md), which covers:
+
+- Security considerations
+- Environment configuration
+- Deployment steps
+- Production features and monitoring
+- Backup and recovery procedures
+- Troubleshooting common issues
 
 ## Provider Access
 

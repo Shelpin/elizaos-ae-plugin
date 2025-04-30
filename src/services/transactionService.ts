@@ -25,7 +25,12 @@ export class TransactionService {
   public async transferAe(params: AeTransferParams): Promise<TransactionResult> {
     try {
       const client = this.walletProvider.getClient();
-      const tx = await client.spend(params.amount, params.recipient, {
+      // Some SDK versions use `spend`, others use `transfer`
+      const sendFn = (client as any).spend ?? (client as any).transfer;
+      if (typeof sendFn !== 'function') {
+        throw new Error('Aeternity client has no spend or transfer method');
+      }
+      const tx = await sendFn.call(client, params.amount, params.recipient, {
         ttl: params.options?.ttl,
         nonce: params.options?.nonce,
       });

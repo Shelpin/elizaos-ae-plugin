@@ -1,9 +1,49 @@
 // import { Node, Universal, MemoryAccount, generateKeyPair } from '@aeternity/aepp-sdk';
 // import { Node, Universal, MemoryAccount, generateKeyPair } from '/root/aepp-sdk-js/dist';
-import { Node, Universal, MemoryAccount, generateKeyPair } from '@aeternity/aepp-sdk';
+import { Node, Universal, MemoryAccount } from '@aeternity/aepp-sdk';
 import CryptoJS from 'crypto-js';
 import { env } from '../environment';
 import { WalletProvider, WalletSecurityLevel } from '../types';
+
+/**
+ * Simple wrapper account that works with SDK
+ */
+class MockAccount {
+  public readonly address: string;
+  public readonly publicKey: string; // Required to match MemoryAccount interface
+  public readonly secretKey: string = 'sk_mock'; // Required to match MemoryAccount interface
+  
+  constructor(address: string) {
+    this.address = address;
+    this.publicKey = address; // In Aeternity, the public key is the address
+  }
+  
+  // Provide minimal required account interface
+  signTransaction(tx: any): string {
+    console.log(`MockAccount: Signing transaction for ${this.address}`);
+    return 'th_mock_signature';
+  }
+  
+  async sign(data: any): Promise<string> {
+    console.log(`MockAccount: Signing data for ${this.address}`);
+    return 'sg_mock_signature';
+  }
+  
+  async signMessage(message: string): Promise<string> {
+    console.log(`MockAccount: Signing message: "${message}"`);
+    return 'sg_mock_signature';
+  }
+  
+  async signTypedData(data: any): Promise<string> {
+    console.log(`MockAccount: Signing typed data for ${this.address}`);
+    return 'sg_mock_signature';
+  }
+  
+  async signDelegation(delegation: any): Promise<string> {
+    console.log(`MockAccount: Signing delegation for ${this.address}`);
+    return 'sg_mock_signature';
+  }
+}
 
 /**
  * AeternityWalletProvider securely manages private keys and provides wallet functionality
@@ -11,8 +51,9 @@ import { WalletProvider, WalletSecurityLevel } from '../types';
  */
 export class AeternityWalletProvider implements WalletProvider {
   private client: Universal | null = null;
-  private account: MemoryAccount | null = null;
+  private account: any = null;
   private securityLevel: WalletSecurityLevel;
+  private mockMode = false;
   
   /**
    * Creates a new instance of AeternityWalletProvider
@@ -32,48 +73,33 @@ export class AeternityWalletProvider implements WalletProvider {
    * @param privateKey - Optional private key
    */
   private async initialize(privateKey?: string): Promise<void> {
-    try {
-      // Get or generate private key
-      const secretKey = privateKey || await this.getPrivateKeyFromEnv();
-      
-      if (!secretKey) {
-        throw new Error('No private key provided or found in environment');
-      }
-      
-      // Create memory account from private key - updated for newer SDK
-      try {
-        this.account = new MemoryAccount({ secretKey });
-        
-        // Initialize node and client
-        const node = new Node({
-          url: env.AETERNITY_NODE_URL,
-          internalUrl: env.AETERNITY_NODE_URL,
-        });
-        
-        // Create SDK client
-        this.client = new Universal({
-          nodes: [{ name: 'node', instance: node }],
-          accounts: [this.account],
-          compilerUrl: env.AETERNITY_COMPILER_URL,
-          networkId: env.AETERNITY_NETWORK_ID,
-        });
-      } catch (initError) {
-        // For pre-production testing, log the error but don't fail
-        console.error('Failed to initialize Aeternity client:', initError);
-        console.warn('Running in MOCK MODE - wallet operations will be simulated');
-      }
-      
-    } catch (error) {
-      console.error('Failed to initialize Aeternity wallet:', error);
-      throw error;
+    // Simplified initialization: always use MemoryAccount + Universal client
+    const secretKey = privateKey ?? await this.getPrivateKeyFromEnv();
+    if (!secretKey) {
+      throw new Error('No private key provided or found in environment');
     }
+    // Initialize account using MemoryAccount
+    this.account = new MemoryAccount({ secretKey });
+    // Initialize node and client
+    const node = new Node({
+      url: env.AETERNITY_NODE_URL,
+      internalUrl: env.AETERNITY_NODE_URL,
+    });
+    this.client = new Universal({
+      nodes: [{ name: 'node', instance: node }],
+      accounts: [this.account],
+      compilerUrl: env.AETERNITY_COMPILER_URL,
+      networkId: env.AETERNITY_NETWORK_ID,
+    });
+    this.mockMode = false;
+    console.log(`Initialized Aeternity client successfully on ${env.AETERNITY_NETWORK_ID}`);
   }
   
   /**
    * Get private key from environment variables, handling decryption if needed
    * @returns Decrypted private key
    */
-  private async getPrivateKeyFromEnv(): Promise<string | undefined> {
+  async getPrivateKeyFromEnv(): Promise<string | undefined> {
     const encryptedKey = env.WALLET_SECRET_KEY;
     const salt = env.WALLET_SECRET_SALT;
     
@@ -82,11 +108,9 @@ export class AeternityWalletProvider implements WalletProvider {
     }
     
     if (this.securityLevel === WalletSecurityLevel.LOW) {
-      // Direct use without encryption (not recommended)
       return encryptedKey;
     }
     
-    // For pre-production testing, allow unencrypted key when salt is provided but key is not encrypted
     if (salt === 'test_salt_for_development_only') {
       console.warn('WARNING: Using unencrypted key in development mode - NOT SECURE FOR PRODUCTION');
       return encryptedKey;
@@ -96,7 +120,6 @@ export class AeternityWalletProvider implements WalletProvider {
       throw new Error('Wallet secret salt is required for decryption');
     }
     
-    // Decrypt the private key
     try {
       const bytes = CryptoJS.AES.decrypt(encryptedKey, salt);
       return bytes.toString(CryptoJS.enc.Utf8);
@@ -111,23 +134,23 @@ export class AeternityWalletProvider implements WalletProvider {
    * @param password - Password to encrypt the key
    * @returns Generated key pair with encrypted private key
    */
-  public static async generateKeyPair(password: string): Promise<{
-    publicKey: string;
-    encryptedPrivateKey: string;
-  }> {
-    // Generate new key pair - returns sk_ prefixed string in newer SDK
-    const keyPair = generateKeyPair();
-    
-    // Encrypt private key
-    const encryptedPrivateKey = CryptoJS.AES.encrypt(
-      keyPair.secretKey,
-      password
-    ).toString();
-    
-    return {
-      publicKey: keyPair.publicKey,
-      encryptedPrivateKey,
-    };
+  static async generateKeyPair(password: string): Promise<{ publicKey: string; encryptedPrivateKey: string }> {
+    try {
+      const { generateKeyPair } = require('@aeternity/aepp-sdk');
+      const keyPair = generateKeyPair();
+      const encryptedPrivateKey = CryptoJS.AES.encrypt(
+        keyPair.secretKey,
+        password
+      ).toString();
+
+      return {
+        publicKey: keyPair.publicKey,
+        encryptedPrivateKey
+      };
+    } catch (error) {
+      console.error('Failed to generate key pair:', error);
+      throw error;
+    }
   }
   
   /**
@@ -240,7 +263,7 @@ export class AeternityWalletProvider implements WalletProvider {
    * @param password - Password for encryption
    * @returns Encrypted private key
    */
-  public static encryptPrivateKey(privateKey: string, password: string): string {
+  static encryptPrivateKey(privateKey: string, password: string): string {
     return CryptoJS.AES.encrypt(privateKey, password).toString();
   }
   
@@ -250,7 +273,7 @@ export class AeternityWalletProvider implements WalletProvider {
    * @param password - Password for decryption
    * @returns Decrypted private key
    */
-  public static decryptPrivateKey(encryptedPrivateKey: string, password: string): string {
+  static decryptPrivateKey(encryptedPrivateKey: string, password: string): string {
     const bytes = CryptoJS.AES.decrypt(encryptedPrivateKey, password);
     return bytes.toString(CryptoJS.enc.Utf8);
   }
